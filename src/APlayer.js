@@ -1,25 +1,4 @@
 function APlayer(option) {
-    // handle options error
-    if (!('music' in option && 'title' in option.music && 'author' in option.music && 'url' in option.music && 'pic' in option.music)) {
-        throw 'APlayer Error: Music, music.title, music.author, music.url, music.pic are required in options';
-    }
-    if (option.element === null) {
-        throw 'APlayer Error: element option null';
-    }
-
-    // default options
-    var defaultOption = {
-        element: document.getElementsByClassName('aplayer')[0],
-        narrow: false,
-        autoplay: false,
-        showlrc: false
-    };
-    for (var defaultKey in defaultOption) {
-        if (defaultOption.hasOwnProperty(defaultKey) && !option.hasOwnProperty(defaultKey)) {
-            option[defaultKey] = defaultOption[defaultKey];
-        }
-    }
-
     this.option = option;
 }
 
@@ -27,12 +6,34 @@ APlayer.prototype.init = function () {
     this.element = this.option.element;
     this.music = this.option.music;
 
+    // Define defult player texts
+    this.option.defaultTexts = {
+        error : "Loading problem",
+        loading : "Loading audio file..."
+    };
+
+    // Check text attr in option
+    if (!this.option.text){
+        this.option.text = this.option.defaultTexts;
+    }
+
+    // Check error text attr in option
+    if (this.option.text && !this.option.text.error){
+        this.option.text.error = this.option.defaultTexts.error;
+    }
+
+    // Check loading text attr in option
+    if (this.option.text && !this.option.text.loading){
+        this.option.text.loading = this.option.defaultTexts.loading;
+    }
+
     // parser lrc
     if (this.option.showlrc) {
+        var lines = [];
         this.lrcTime = [];
         this.lrcLine = [];
         var lrcs = this.element.getElementsByClassName('aplayer-lrc-content')[0].innerHTML;
-        var lines = lrcs.split(/\n/);
+        lines = lrcs.split(/\n/);
         var timeExp = /\[(\d{2})\:(\d{2})\.(\d{2})\]/;
         var lrcExp = /](.*)$/;
         for (var i = 0; i < lines.length; i++) {
@@ -50,16 +51,16 @@ APlayer.prototype.init = function () {
         + '<div class="aplayer-pic">'
         +     '<img src="' + this.music.pic + '">'
         +     '<div class="aplayer-button aplayer-pause aplayer-hide">'
-        +         '<i class="demo-icon aplayer-icon-pause"></i>'
+        +         '<i class="demo-icon icon-pause2"></i>'
         +     '</div>'
         +     '<div class="aplayer-button aplayer-play">'
-        +         '<i class="demo-icon aplayer-icon-play"></i>'
+        +         '<i class="demo-icon icon-play3"></i>'
         +     '</div>'
         + '</div>'
         + '<div class="aplayer-info">'
         +     '<div class="aplayer-music">'
         +         '<span class="aplayer-title">' + this.music.title + '</span>'
-        +         '<span class="aplayer-author"> - (＞﹏＜)加载中,好累的说...</span>'
+        +         '<span class="aplayer-author"> - ' + this.option.texts.loading + '</span>'
         +     '</div>'
         +     '<div class="aplayer-lrc">'
         +         '<div class="aplayer-lrc-contents" style="top: 0"></div>'
@@ -76,7 +77,7 @@ APlayer.prototype.init = function () {
         +         '<div class="aplayer-time">'
         +             ' - <span class="aplayer-ptime">00:00</span> / <span class="aplayer-dtime">00:00</span>'
         +             '<div class="aplayer-volume-wrap">'
-        +                 '<i class="demo-icon aplayer-icon-volume-down"></i>'
+        +                 '<i class="icon-volume-medium"></i>'
         +                 '<div class="aplayer-volume-bar-wrap">'
         +                     '<div class="aplayer-volume-bar">'
         +                         '<div class="aplayer-volume" style="height: 80%"></div>'
@@ -108,8 +109,14 @@ APlayer.prototype.init = function () {
     // create audio element
     this.audio = document.createElement("audio");
     this.audio.src = this.music.url;
-    this.audio.loop = true;
     this.audio.preload = 'metadata';
+
+    // set loop attribute from options
+    if(this.option.loop){
+        this.audio.loop = true;
+    }else{
+        this.option.loop = false;
+    }
 
     // show audio time
     var _self = this;
@@ -129,9 +136,8 @@ APlayer.prototype.init = function () {
         }, 500);
     });
 
-    // audio download error
     this.audio.addEventListener('error', function () {
-        _self.element.getElementsByClassName('aplayer-author')[0].innerHTML = ' - ' + '加载失败 ╥﹏╥';
+        _self.element.getElementsByClassName('aplayer-author')[0].innerHTML = ' - ' + _self.option.texts.error;
     });
 
     // play and pause button
@@ -202,21 +208,21 @@ APlayer.prototype.init = function () {
             _self.audio.muted = false;
         }
         if (percentage === 1) {
-            volumeicon.className = 'demo-icon aplayer-icon-volume-up';
+            volumeicon.className = 'icon-volume-medium';
         }
         else {
-            volumeicon.className = 'demo-icon aplayer-icon-volume-down';
+            volumeicon.className = 'icon-volume-medium';
         }
     });
     volumeicon.addEventListener('click', function () {
         if (_self.audio.muted) {
             _self.audio.muted = false;
-            volumeicon.className = _self.audio.volume === 1 ? 'demo-icon aplayer-icon-volume-up' : 'demo-icon aplayer-icon-volume-down';
+            volumeicon.className = _self.audio.volume === 1 ? 'icon-volume-medium' : 'icon-volume-medium';
             _self.updateBar.call(_self, 'volume', _self.audio.volume, 'height');
         }
         else {
             _self.audio.muted = true;
-            volumeicon.className = 'demo-icon aplayer-icon-volume-off';
+            volumeicon.className = 'icon-volume-mute2';
             _self.updateBar.call(_self, 'volume', 0, 'height');
         }
     });
